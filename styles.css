@@ -66,6 +66,14 @@ h1 {
   align-items: center;
 }
 
+#generate {
+  height: 10vh;
+  width: 10vw;
+  background-color: darkblue;
+  color: white;
+  font-weight: bold;
+}
+
 #delete {
   height: 10vh;
   width: 10vw;
