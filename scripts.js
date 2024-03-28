@@ -18,6 +18,7 @@ let totalLineLength = 0
 let once = true
 let newX = 0
 let newY = 0
+let beginLineLength = 0
 
 let megaPointList = []
 
@@ -95,7 +96,7 @@ const startFunc = () => {
 
   pointList.push(megaStart)
   pointList.push(megaEnd)
-
+  beginLineLength = megaEnd.x - megaStart.x
 
 
 }
@@ -137,7 +138,7 @@ canvas.addEventListener("mousedown", (e) => {
       }
     }
 
-
+    
   }
 
 
@@ -163,7 +164,7 @@ canvas.addEventListener("mousedown", (e) => {
   // } else {
   //   pressedDown = false
   // }
-  
+  // generateFractal() //REMOVE IN FINAL VERSION
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -189,6 +190,7 @@ canvas.addEventListener("mousemove", (e) => {
     // replaceSecondLast(midPoint)
 
     drawLine()
+    // generateFractal() //REMOVE IN FINAL VERSION
   } 
   
 });
@@ -257,12 +259,13 @@ const pythagoras = (a,b) => {
   // return cLength
 }
 
-const reversePythagoras = (a,b) => {
+const reversePythagoras = (a,b,c) => {
   // hypotenuse = (a.lineLength/totalLineLength)*a.lineLength 
-  hypotenuse = (a.lineLength/totalLineLength)
 
   console.log("Hypotenuse: " + hypotenuse)
-  angle = (a.angleRelative)
+  if (once == true) {
+    angle = (a.angleRelative)
+  }
   // newX = Math.cos(angle)*hypotenuse
   // newY = Math.sin(angle)*hypotenuse
   // console.log("First math; newX: " + newX + " newY: " + newY)
@@ -280,11 +283,45 @@ const reversePythagoras = (a,b) => {
 
   newX = newX - a.x
   newY = newY - a.y
+  // if (c == false) {
+  //   newX = newX * Math.cos(angle + a.angleRelative) - newY * Math.sin(angle + a.angleRelative)
+  //   newY = newX * Math.sin(angle) + newY * Math.cos(angle)
+  // } else {
+    newX = newX * Math.cos(angle) - newY * Math.sin(angle)
+    newY = newX * Math.sin(angle) + newY * Math.cos(angle)
+  // }
+    console.log("Second math; newX: " + newX + " newY: " + newY)
 
-  newX = newX * Math.cos(angle) - newY * Math.sin(angle)
-  newY = newX * Math.sin(angle) + newY * Math.cos(angle)
 
 }
+
+
+function rotatePointAroundPivot(p, pivot, angleDegrees) {
+  // Convert angle to radians
+  const angleRadians = angleDegrees * (Math.PI / 180);
+
+  // Translate point to origin
+  const translatedX = p.x - pivot.x;
+  const translatedY = p.y - pivot.y;
+
+  // Rotate point
+  const rotatedX = translatedX * Math.cos(angleRadians) - translatedY * Math.sin(angleRadians);
+  const rotatedY = translatedX * Math.sin(angleRadians) + translatedY * Math.cos(angleRadians);
+
+  // Translate point back
+  const finalX = rotatedX + pivot.x;
+  const finalY = rotatedY + pivot.y;
+
+  return { x: finalX, y: finalY };
+}
+
+// Usage:
+const P = { x: 5, y: 5 };
+const C = { x: 1, y: 1 };
+const angleDegrees = 90; // Rotate 90 degrees
+
+const rotatedPoint = rotatePointAroundPivot(P, C, angleDegrees);
+
 
 const angleFinder = (adjacent,opposite) => {
   let thisMath = (Math.atan(opposite/adjacent))
@@ -324,46 +361,112 @@ const generateFractal = () => {
 
   ultraMegaStart = pointList[0]
   ultraMegaEnd = pointList[pointList.length-1]
-
+  megaI = 0
   for (i = 0; i < depth; i++) {
-    for (i = 0; i < pointList.length - 1; i++) {
-      if (once == true) {
-        megaPointList.push(ultraMegaStart)
-        once = false
-        // continue
-      } 
-      
-      //create new point that is inserted into mega point list with these values
-      // console.log(pointList[i].lineLength)
-      // console.log((pointList[i].lineLength/totalLineLength)*pointList[i].lineLength)
+    for (j = megaI; j < pointList.length - 1; j++) {
+      for (i = 0; i < pointList.length - 1; i++) {
+        if (once == true) {
+          //hypotenuse calculations are currently off.
+          //right now it sets them before rotating, which makes the end line
+          //shorter than needed
+          //get length of modified starting line and divide by 
+          //length of initial two point line
+          hypotenuse = (pointList[j].lineLength/beginLineLength)
+          if (megaPointList.length == 0) {
+            megaPointList.push(ultraMegaStart)
+          } else {
+            megaPointList.push(megaPointList[megaPointList.length-1])
+            // console.log('pushing new stuiff')
+          }
+          reversePythagoras(pointList[i],pointList[i+1], once)
+          once = false
+  
+          // continue
+        } else {
+          reversePythagoras(pointList[i],pointList[i+1], once)
+        }
+        
+        //create new point that is inserted into mega point list with these values
+        // console.log(pointList[i].lineLength)
+        // console.log((pointList[i].lineLength/totalLineLength)*pointList[i].lineLength)
+  
+        console.log("pointlist[i]: " + pointList[i].angleStatic)
+  
+        // console.log(pointList[i].x + "[x,y]" + pointList[i].y)
 
+        //create new point in full list here
+        //THIS AREA WILL KEEP REGENERATING THE SAME POINTS PLEASE FIX?
+        megaPointList[i+1] = {
+          x : newX + megaPointList[i].x,
+          y : newY + megaPointList[i].y,
+          angleRelative : pointList[j].angleRelative + pointList[j].angleRelative,
+          angleStatic : pointList[j].angleStatic + pointList[j].angleStatic,
+          lineLength : (pointList[j].lineLength/beginLineLength)*pointList[j].lineLength
+        };
+  
 
-      reversePythagoras(pointList[i],pointList[i+1])
-      console.log("pointlist[i]: " + pointList[i].angleStatic)
+        //draw path from the last point to the new point
+        c.beginPath();
+        c.moveTo(megaPointList[j].x, megaPointList[j].y)
+        c.lineTo(megaPointList[j+1].x, megaPointList[j+1].y)
+        c.stroke()
+        console.log("Final; newX: " + megaPointList[i+1].x + " newY: " + megaPointList[i+1].y)
+      }
+      // megaI = megaPointList - 1
 
-      // console.log(pointList[i].x + "[x,y]" + pointList[i].y)
-      megaPointList[i+1] = {
-        x : newX + megaPointList[i].x,
-        y : newY + megaPointList[i].y,
-        angleRelative : pointList[i].angleRelative*2,
-        angleStatic : pointList[i].angleStatic*2,
-        lineLength : (pointList[i].lineLength/totalLineLength)*pointList[i].lineLength
-      };
-
-
-
-      c.beginPath();
-      c.moveTo(megaPointList[i].x, megaPointList[i].y)
-      c.lineTo(megaPointList[i+1].x, megaPointList[i+1].y)
-      c.stroke()
-      console.log("Final; newX: " + megaPointList[i+1].x + " newY: " + megaPointList[i+1].y)
-
+      // c.beginPath();
+      // c.moveTo(megaPointList[megaPointList.length-1].x, megaPointList[megaPointList.length-1].y)
+      // megaPointList.push(pointList[j])
+      // c.lineTo(megaPointList[megaPointList.length-2].x, megaPointList[megaPointList.length-2].y)
+      // c.stroke()
+      //THIS STUFF DOES NOTHING???
     }
-    c.beginPath();
-    c.moveTo(megaPointList[megaPointList.length-1].x, megaPointList[megaPointList.length-1].y)
-    megaPointList.push(pointList[i])
-    c.lineTo(megaPointList[megaPointList.length-1].x, megaPointList[megaPointList.length-1].y)
-    c.stroke()
+    once = true
+
+
+
+
+
+
+
   }
-  once = true
+    
 }
+
+
+//DEBUGGING NOTES BELOW
+
+
+
+//all but the very first point are rotating perfectly.
+// when perfectly horizontal from point 1 to 2 everything works flawlessly
+
+
+
+
+//AI NOTE
+//To maintain the relative rotation, we should not rotate the points again
+//after scaling. Instead, we scale first and then rotate the entire set so
+//that the line from the first duplicated point to 
+//the last duplicated point aligns with the line from
+// the first to the second original point.
+
+
+
+
+//if the second angle is equal to or less than the first angle then
+//the final point no longer lines up as intended
+
+// first angle is set to 135 when it should be set to 90?
+//then when it reaches 91 it flips 180 degrees around
+
+
+//maybe the first point breaks because its getting double
+//the amount of angle adjustment it needs?
+//like, all the angles the angles get an angle adjustment of
+// angle #1, but the first angle gets it twice cause it gets the full pass
+//and the indivual pass???? maybe
+
+
+//OR MAYBE its because once the angles goes from 1 to 0 and keeps going
+//it flips to become negatiev and THAT is the issue??
